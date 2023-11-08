@@ -27,7 +27,7 @@ class Program
         father.FirstName = "Антон";
         Mother mother = new Mother();
         mother.FirstName = "Антонина";
-        Children children = new Children();
+        Children children = new Children { Birthday = DateTime.Parse("01.05.2000") };
         children.FirstName = "Антонио";
         // назначение объектов может выглять так. НО
         // это небезопасно
@@ -37,7 +37,7 @@ class Program
         children.Father = father;
         children.Mother = mother;
 
-        Children child = new Children();
+        Children child = new Children { Birthday = DateTime.Parse("01.05.2000") };
         child.FirstName = "Армен";
 
         child.Mother = mother;
@@ -78,6 +78,33 @@ class Program
         Console.WriteLine(children.Weight);
         children.Weight = 250; // значение проигнорируется, но ошибок нет
         Console.WriteLine(children.Weight);
+
+        Console.WriteLine(children.Age);
+
+        Car car = new Car();
+        car.Mark = "Honda"; // можно переназначить любое свойство
+        Console.WriteLine($"{car.Mark} {car.Year} {car.Price}");
+
+        car = new Car("Лада", 2023, 300000);
+        Console.WriteLine($"{car.Mark} {car.Year} {car.Price}");
+            
+        // для работы такого варианта назначения свойств
+        // в классе либо не должно быть конструкторов
+        // либо должен присутствовать конструктор без аргументов
+        // если конструктор есть, то сначала выполнится он,
+        // потом произойдет переназначение свойств
+        car = new Car { Mark = "Ferrari" };
+        Console.WriteLine($"{car.Mark} {car.Year} {car.Price}");
+
+        for (int i = 0; i < 10000; i++)
+            car = new Car();
+
+        Console.WriteLine("10 000 объектов созданы");
+        Console.ReadLine();
+        GC.Collect(); // принудительный вызов сборщика мусора
+        Console.ReadLine();
+        Console.WriteLine(Car.count + " объектов было уничтожено сборщиком мусора");
+        Console.ReadLine();
     }
 }
 
@@ -104,7 +131,7 @@ public class Children
 
     // по соглашению названия полей указывается со строчной буквы
     // или знака подчеркивания
-    internal int age;
+    //internal int age;
 
     // каждый экземпляр класса может содержать разную информацию
     // во всех полях, тем самым характеризуя разных студентов
@@ -127,6 +154,25 @@ public class Children
                 weight = value;
         }
     }
+    // краткая запись свойства
+    // при компиляции будет создано специальное поле,
+    // где будет храниться значение свойства
+    public bool IsInCollege { get; set; } 
+
+    // в свойстве может отсутствовать один из блоков 
+    // (либо get либо set)
+    // если есть блок get, то свойство доступно только
+    // для чтения. Если есть только блок set, свойство
+    // доступно только для записи
+
+    // это свойство доступно только для чтения
+    public int Age { 
+        get 
+        {
+            // это очень упрощенный расчет
+            return DateTime.Now.Year - Birthday.Year;
+        }
+    }
 
     public Father Father;
     public Mother Mother;
@@ -135,7 +181,7 @@ public class Children
     internal /*static*/ void PrintAge()
     {
         int test = 0;
-        Console.WriteLine(age);
+        Console.WriteLine(Age);
     }
 
     // static - объявляет конструкцию внутри класса (или сам класс)
@@ -150,7 +196,6 @@ public class Children
     // конструкции с модификатором public или internal, помеченные
     // как static можно использовать через имя класса (Math.PI,
     // File.OpenRead)
-   
 }
 
 public class Mother
@@ -167,4 +212,94 @@ public class Father
     public string LastName;
 
     public List<Children> Childrens = new();
+}
+
+
+public class Car
+{
+    public static int count = 0;
+    // Конструкторы
+    // Конструктор выполняется при инициализации объекта класса
+    // Разные конструкторы различаются по типу и/или кол-ву 
+    // аргументов
+    // Какой именно конструктор будет использован при
+    // инициализации объекта, будет зависеть от переденных
+    // аргументов в объект (синтаксис после слова new)
+    // Конструктор может быть объявлен с разным модификатором
+    // доступа
+    // Может быть статичный конструктор, он может быть
+    // только один на класс. Выполняется при первом обращении
+    // к классу, т.е. один раз
+    // Название конструктора всегда совпадает с названием
+    // класса
+
+    public string Mark { get; set; }
+    public int Year { get; set; }
+    public int Price { get; set; }
+
+    // пример конструктора без аргументов
+    // такой же конструктор есть в любом классе
+    // без прописанных конструкторов. Только он ничего 
+    // не будет делать, просто для соблюдения синтаксиса
+    public Car()
+    {
+        // в конструкторе обычно происходит назначение
+        // состояния объекта (значения по умолчанию для 
+        // свойств и полей)
+        Price = 1000000;
+        Year = 2020;
+        Mark = "Toyota";
+    }
+
+    // далее еще 3 конструктора
+    // все 4 конструктора отличаются набором аргументов
+    public Car(string mark)
+    { 
+        Mark = mark;
+    }
+    // :this - обращение к другому конструктору в этом же
+    // классе
+    public Car(string mark, int year): this(mark)
+    {
+        Year = year;
+    }
+
+    // вызывается второй конструктор, куда передаются 2
+    // аргумента. А второй конструктор, в свою очередь
+    // вызывается конструктор с одним аргументом
+    public Car(string mark, int year, int price)
+        :this(mark, year)
+    {
+        Price = price;
+    }
+
+    // статичный конструктор не имеет модификатора для
+    // области видимости. Должно быть слово static
+    // отсутствуют аргументы
+    static Car()
+    {
+        Console.WriteLine("Выполнился статичный конструктор");
+    }
+
+    // деструктор
+    // в фреймворках .net используется специальный сборщик
+    // мусора (Garbage Collector, класс GC), который работает
+    // автоматически (можно вызвать его вручную через метод
+    // GC.Collect()). Сборщик мусора ищет объекты, на которые
+    // нет ссылок, т.е. они не используются в системе.
+    // найденные объекты уничтожаются. При уничтожении объекта
+    // у него срабатывает деструктор. Нельзя точно предсказать
+    // когда сработает деструктор.
+    // Частая проблема Memory Leak - утечка памяти, как раз
+    // связана с тем, что на какие-то объекты всегда есть
+    // ссылки, поэтому их нельзя удалить из памяти.
+    // пример деструктора, аргументов нет, модификатор доступа
+    // нет
+    ~Car()
+    {
+        // в деструкторе не должно быть важного кода
+        // обычно очень специфичный код
+        //Console.WriteLine("Объект уничтожен");
+        count++;
+    }
 }
